@@ -10,9 +10,10 @@ trait Querable
      * @param Builder $builder
      * @param Query $filter
      */
-    public function scopeApplyQuery(Builder $builder, Query $query)
+    public function scopeApplyQuery(Builder $builder, Query $query = null)
     {
-        $query->apply($builder);
+        if ($query != null)
+            $query->apply($builder);
     }
 }
 

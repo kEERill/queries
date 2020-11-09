@@ -47,6 +47,11 @@ class Query
     /**
      * @var array
      */
+    protected $rules = [];
+
+    /**
+     * @var array
+     */
     protected $defaultRules = [
         'scopes' => ['filled', 'array'],
         'scopes.*' => ['required', 'string'],
@@ -125,7 +130,7 @@ class Query
                 $method = Str::camel($field);
     
                 if (method_exists($this, $method)) 
-                    call_user_func_array([$this, $method], (array) $value);
+                    call_user_func([$this, $method], $value);
             }
         }
 
