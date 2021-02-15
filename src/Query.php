@@ -123,29 +123,58 @@ class Query
     {
         $this->builder = $builder;
 
-        if (count($this->fields) > 0)
+        $this->filteringByFields($this->getFields());
+        $this->loadingRelations($this->getRelations());
+        $this->sortingByField($this->getSortBy(), $this->getSortDesc());
+    }
+
+    /**
+     * @param array $fields
+     * @return void
+     */
+    protected function filteringByFields(array $fields) : void
+    {
+        foreach ($fields as $field => $value) 
         {
-            foreach ($this->getFields() as $field => $value) 
+            $method = Str::camel($field);
+
+            if (method_exists($this, $method)) 
+                call_user_func([$this, $method], $value);
+        }
+    }
+
+    /**
+     * @param array $relations
+     * @return void
+     */
+    protected function loadingRelations(array $relations) : void
+    {
+        foreach ($relations as $relation)
+        {
+            $method = Str::camel("relation_{$relation}");
+
+            if (method_exists($this, $method)) 
             {
-                $method = Str::camel($field);
-    
-                if (method_exists($this, $method)) 
-                    call_user_func([$this, $method], $value);
+                call_user_func([$this, $method]);
+                continue;
             }
-        }
 
-        if (count($this->relations) > 0)
-        {
             $this->builder
-                ->with($this->getRelations());
+                ->with($relation);
         }
+    }
 
-        $sortBy = $this->getSortBy();
-
+    /**
+     * @param string $sortBy
+     * @param string $sortDesc
+     * @return void
+     */
+    protected function sortingByField(string $sortBy = null, string $sortDesc) : void
+    {
         if ($sortBy !== null)
         {
             $this->builder
-                ->orderBy($sortBy, $this->getSortDesc());
+                ->orderBy($sortBy, $sortDesc);
         }
     }
 }
