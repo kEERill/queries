@@ -2,12 +2,11 @@
 
 namespace Keerill\Queries;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 
-class Query 
+class Query
 {
     /**
      * @var Request
@@ -50,17 +49,6 @@ class Query
     protected $rules = [];
 
     /**
-     * @var array
-     */
-    protected $defaultRules = [
-        'scopes' => ['filled', 'array'],
-        'scopes.*' => ['required', 'string'],
-
-        'sort_by' => ['filled', 'string'],
-        'sort_desc' => ['filled', 'boolean']
-    ];
-
-    /**
      * @param Request $request
      */
     public function __construct(Request $request)
@@ -77,7 +65,7 @@ class Query
     /**
      * @return array
      */
-    protected function getFields() : array
+    protected function getFields(): array
     {
         return array_filter($this->request->only($this->fields), function($value) { return $value !== null; });
     }
@@ -85,7 +73,7 @@ class Query
     /**
      * @return array
      */
-    public function getRelations() : array
+    public function getRelations(): array
     {
         return array_intersect($this->request->get('scopes', []), $this->relations);
     }
@@ -93,7 +81,7 @@ class Query
     /**
      * @return string|null
      */
-    public function getSortBy() : ?string
+    public function getSortBy(): ?string
     {
         return in_array($this->request->get('sort_by'), $this->sortable)
             ? $this->request->get('sort_by') : $this->sortBy;
@@ -102,7 +90,7 @@ class Query
     /**
      * @return string
      */
-    public function getSortDesc() : string
+    public function getSortDesc(): string
     {
         return boolval($this->request->get('sort_desc', $this->sortDesc)) ? 'desc' : 'asc';
     }
@@ -110,35 +98,44 @@ class Query
     /**
      * @return array
      */
-    protected function getValidationRules() : array
+    protected function getValidationRules(): array
     {
-        return array_merge($this->defaultRules, $this->rules);
+        return array_merge([
+            'scopes' => ['filled', 'array'],
+            'scopes.*' => ['required', 'string'],
+            'sort_by' => ['filled', 'string'],
+            'sort_desc' => ['filled', 'boolean']
+        ], $this->rules);
     }
 
     /**
      * @param Builder $builder
      * @return void
      */
-    public function apply(Builder $builder) : void
+    public function apply(Builder $builder): void
     {
         $this->builder = $builder;
 
         $this->filteringByFields($this->getFields());
         $this->loadingRelations($this->getRelations());
-        $this->sortingByField($this->getSortBy(), $this->getSortDesc());
+
+        $sortBy = $this->getSortBy();
+
+        if ($sortBy !== null) {
+            $this->sortingByField($sortBy, $this->getSortDesc());
+        }
     }
 
     /**
      * @param array $fields
      * @return void
      */
-    protected function filteringByFields(array $fields) : void
+    protected function filteringByFields(array $fields): void
     {
-        foreach ($fields as $field => $value) 
-        {
+        foreach ($fields as $field => $value) {
             $method = Str::camel($field);
 
-            if (method_exists($this, $method)) 
+            if (method_exists($this, $method))
                 call_user_func([$this, $method], $value);
         }
     }
@@ -147,14 +144,12 @@ class Query
      * @param array $relations
      * @return void
      */
-    protected function loadingRelations(array $relations) : void
+    protected function loadingRelations(array $relations): void
     {
-        foreach ($relations as $relation)
-        {
+        foreach ($relations as $relation) {
             $method = Str::camel("relation_{$relation}");
 
-            if (method_exists($this, $method)) 
-            {
+            if (method_exists($this, $method)) {
                 call_user_func([$this, $method]);
                 continue;
             }
@@ -169,12 +164,9 @@ class Query
      * @param string $sortDesc
      * @return void
      */
-    protected function sortingByField(string $sortBy = null, string $sortDesc) : void
+    protected function sortingByField(string $sortBy, string $sortDesc): void
     {
-        if ($sortBy !== null)
-        {
-            $this->builder
-                ->orderBy($sortBy, $sortDesc);
-        }
+        $this->builder
+            ->orderBy($sortBy, $sortDesc);
     }
 }
