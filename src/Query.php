@@ -147,7 +147,7 @@ class Query
     protected function loadingRelations(array $relations): void
     {
         foreach ($relations as $relation) {
-            $method = Str::camel("relation_{$relation}");
+            $method = $this->getRelationMethod($relation);
 
             if (method_exists($this, $method)) {
                 call_user_func([$this, $method]);
@@ -157,6 +157,16 @@ class Query
             $this->builder
                 ->with($relation);
         }
+    }
+
+    /**
+     * @param string $relation
+     * @return string
+     */
+    protected function getRelationMethod(string $relation): string
+    {
+        $relation = str_replace('.', '_', $relation);
+        return Str::camel("relation_{$relation}");
     }
 
     /**
